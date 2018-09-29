@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
+import { GithubStore } from '../store/github.store';
 
 @Injectable({
   providedIn: 'root'
@@ -10,26 +11,43 @@ export class GithubService {
 
   private baseApiUrl = 'http://api.github.com';
 
-  httpOptions = {
-    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
-  };
+  constructor(
+    private http: HttpClient,
+    private store: GithubStore
+  ) { }
 
-  constructor(private http: HttpClient) { }
+  getUserData(username: string) {
+    this.getProfile(username)
+      .subscribe(user => this.store.addProfile(user));
+    this.getGists(username)
+      .subscribe(gists => this.store.addGists(gists));
+    this.getRepos(username)
+      .subscribe(repos => this.store.addRepos(repos));
+  }
 
-  getUserData(username: string): Observable<any> {
+  getProfile(username: string): Observable<any> {
     const userUrl = `${this.baseApiUrl}/users/${username}`;
-    return this.http.get(userUrl, this.httpOptions)
+    return this.http.get(userUrl)
       .pipe(
         tap(user => console.log('fetched user', user)),
         catchError(this.handleError('getUserData', []))
       );
   }
 
-  getGistsByUsername(username: string): Observable<any> {
+  getGists(username: string): Observable<any> {
     const gistUrl = `${this.baseApiUrl}/users/${username}/gists`;
-    return this.http.get(gistUrl, this.httpOptions)
+    return this.http.get(gistUrl)
       .pipe(
         tap(gists => console.log('fetched gists', gists)),
+        catchError(this.handleError('getGistByUsername', []))
+      );
+  }
+
+  getRepos(username: string): Observable<any> {
+    const repoUrl = `${this.baseApiUrl}/users/${username}/repos`;
+    return this.http.get(repoUrl)
+      .pipe(
+        tap(repos => console.log('fetched repos', repos)),
         catchError(this.handleError('getGistByUsername', []))
       );
   }
